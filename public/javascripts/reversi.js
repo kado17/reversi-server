@@ -6,10 +6,10 @@ const WHITE = 0,
   //ISPUTABLE = 8,
   EMPTY = 9
 
+exports.colorChange = (color) => (color === WHITE ? BLACK : WHITE)
+
 exports.boardInit = () => {
-  let new_board = JSON.parse(
-    JSON.stringify(new Array(8).fill(new Array(8).fill(EMPTY)))
-  )
+  let new_board = JSON.parse(JSON.stringify(new Array(8).fill(new Array(8).fill(EMPTY))))
   new_board[HEIGHT / 2][WIDTH / 2] = WHITE
   new_board[HEIGHT / 2 - 1][WIDTH / 2 - 1] = WHITE
   new_board[HEIGHT / 2 - 1][WIDTH / 2] = BLACK
@@ -17,8 +17,10 @@ exports.boardInit = () => {
   return new_board
 }
 
-let board = JSON.parse(
-  JSON.stringify(this.boardInit()))
+const board = JSON.parse(JSON.stringify(this.boardInit()))
+const color = [WHITE, BLACK]
+// eslint-disable-line
+const turnColor = color[Math.floor(Math.random() * color.length)]
 
 exports.isPutableDisk = (x, y, oneself, board) => {
   if (board[y][x] != EMPTY) {
@@ -26,9 +28,9 @@ exports.isPutableDisk = (x, y, oneself, board) => {
   }
 
   let opponent
-  if (oneself == WHITE) {
+  if (oneself === WHITE) {
     opponent = BLACK
-  } else if (oneself == BLACK) {
+  } else if (oneself === BLACK) {
     opponent = WHITE
   } else {
     return false
@@ -36,7 +38,7 @@ exports.isPutableDisk = (x, y, oneself, board) => {
 
   for (let i = -1; i < 2; i++) {
     for (let j = -1; j < 2; j++) {
-      if (i == 0 && j == 0) {
+      if (i === 0 && j === 0) {
         continue
       }
 
@@ -58,31 +60,30 @@ exports.isPutableDisk = (x, y, oneself, board) => {
           continue
         }
 
-        if (board[tmpY][tmpX] == EMPTY) {
+        if (board[tmpY][tmpX] === EMPTY) {
           break
         }
 
-        if (board[tmpY][tmpX] == oneself) {
-            return true
-          }
+        if (board[tmpY][tmpX] === oneself) {
+          return true
         }
       }
+    }
   }
   return false
 }
 
 exports.PutDisk = (x, y, oneself, board) => {
-  let new_board = JSON.parse(
-    JSON.stringify(board))
+  let new_board = JSON.parse(JSON.stringify(board))
 
   if (board[y][x] != EMPTY) {
     return []
   }
 
   let opponent
-  if (oneself == WHITE) {
+  if (oneself === WHITE) {
     opponent = BLACK
-  } else if (oneself == BLACK) {
+  } else if (oneself === BLACK) {
     opponent = WHITE
   } else {
     return []
@@ -90,11 +91,11 @@ exports.PutDisk = (x, y, oneself, board) => {
 
   for (let i = -1; i < 2; i++) {
     for (let j = -1; j < 2; j++) {
-      if (i == 0 && j == 0) {
+      if (i === 0 && j === 0) {
         continue
       }
 
-      if (y + j < 0 || HEIGHT < y + j || x + i < 0 || WIDTH < x + i) {
+      if (y + j < 0 || HEIGHT <= y + j || x + i < 0 || WIDTH <= x + i) {
         continue
       }
 
@@ -112,21 +113,21 @@ exports.PutDisk = (x, y, oneself, board) => {
           continue
         }
 
-        if (board[tmpY][tmpX] == EMPTY) {
+        if (board[tmpY][tmpX] === EMPTY) {
           break
         }
 
-        if (board[tmpY][tmpX] == oneself) {
-            new_board[y][x] = oneself
-            for (let n = 1; n < k; n++) {
-              new_board[y + j * n][x + i * n] = oneself
-            }
+        if (board[tmpY][tmpX] === oneself) {
+          new_board[y][x] = oneself
+          for (let n = 1; n < k; n++) {
+            new_board[y + j * n][x + i * n] = oneself
           }
         }
       }
     }
+  }
   return new_board
 }
 
-
 exports.board = board
+exports.turnColor = turnColor
