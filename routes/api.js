@@ -23,11 +23,16 @@ router.get('/test', (req, res) => {
 })
 
 router.post('/disk', (req, res) => {
-  let { x, y } = req.body
-  let a = reversi.PutDisk(x, y, turnColor, board)
-  turnColor = reversi.colorChange(turnColor)
-  if (a.length) board = JSON.parse(JSON.stringify(a))
-  res.json({ a: board, x: x, y: y })
+  const { x, y } = req.body
+  const tmpBoard = reversi.PutDisk(x, y, turnColor, board)
+  let msg = ''
+  turnColor = reversi.colorChange(turnColor, board)
+  if (!tmpBoard.length || JSON.stringify(board) === JSON.stringify(tmpBoard)) {
+    msg = 'そこにはおけません'
+  } else {
+    board = JSON.parse(JSON.stringify(tmpBoard))
+  }
+  res.json({ a: board, msg: msg, x: x, y: y })
 })
 
 module.exports = router

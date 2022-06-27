@@ -6,8 +6,6 @@ const WHITE = 0,
   //ISPUTABLE = 8,
   EMPTY = 9
 
-exports.colorChange = (color) => (color === WHITE ? BLACK : WHITE)
-
 exports.boardInit = () => {
   let new_board = JSON.parse(JSON.stringify(new Array(8).fill(new Array(8).fill(EMPTY))))
   new_board[HEIGHT / 2][WIDTH / 2] = WHITE
@@ -21,6 +19,8 @@ const board = JSON.parse(JSON.stringify(this.boardInit()))
 const color = [WHITE, BLACK]
 // eslint-disable-line
 const turnColor = color[Math.floor(Math.random() * color.length)]
+
+const oppositeColor = (color) => (color === WHITE ? BLACK : color === BLACK ? WHITE : EMPTY)
 
 exports.isPutableDisk = (x, y, oneself, board) => {
   if (board[y][x] != EMPTY) {
@@ -127,6 +127,29 @@ exports.PutDisk = (x, y, oneself, board) => {
     }
   }
   return new_board
+}
+
+exports.colorChange = (nowColor, board) => {
+  console.log(10)
+  const opponent = oppositeColor(nowColor)
+  let x, y
+  console.log(opponent)
+  for (y = 0; y < HEIGHT; y++) {
+    for (x = 0; x < WIDTH; x++) {
+      if (this.isPutableDisk(x, y, opponent, board)) {
+        return opponent
+      }
+    }
+  }
+  for (y = 0; y < HEIGHT; y++) {
+    for (x = 0; x < WIDTH; x++) {
+      if (this.isPutableDisk(x, y, nowColor, board)) {
+        return nowColor
+      }
+    }
+  }
+
+  return EMPTY
 }
 
 exports.board = board
