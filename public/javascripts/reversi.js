@@ -3,7 +3,7 @@ const WIDTH = SIZE
 const HEIGHT = SIZE
 const WHITE = 0,
   BLACK = 1,
-  //ISPUTABLE = 8,
+  //PUTABLE = 8,
   EMPTY = 9
 
 exports.boardInit = () => {
@@ -36,13 +36,15 @@ exports.isPutableDisk = (x, y, oneself, board) => {
     return false
   }
 
+  //let count = 0
+
   for (let i = -1; i < 2; i++) {
     for (let j = -1; j < 2; j++) {
       if (i === 0 && j === 0) {
         continue
       }
 
-      if (y + j < 0 || HEIGHT < y + j || x + i < 0 || WIDTH < x + i) {
+      if (y + j < 0 || HEIGHT <= y + j || x + i < 0 || WIDTH <= x + i) {
         continue
       }
 
@@ -148,6 +150,31 @@ exports.colorChange = (nowColor, board) => {
   }
 
   return EMPTY
+}
+
+exports.result = (board) => {
+  let x, y;
+  let white_count = 0, black_count = 0;
+  let winner = ''
+  for(y = 0; y < HEIGHT; y++){
+    for(x = 0; x < WIDTH; x++){
+      if(board[y][x] == WHITE){
+        white_count += 1;
+      } else if(board[y][x] == BLACK){
+        black_count += 1;
+      }
+    }
+  }
+
+  if(black_count > white_count){
+    winner = "black"
+  } else if(white_count > black_count){
+    winner = "white"
+  } else {
+    winner = "draw"
+  }
+
+  return {winner:winner, white_count:white_count,black_count:black_count}
 }
 
 exports.board = board

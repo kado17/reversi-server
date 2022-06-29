@@ -29,10 +29,18 @@ function socketIO() {
         msg = 'そこにはおけません'
       } else {
         board = JSON.parse(JSON.stringify(tmpBoard))
-        turnColor = reversi.colorChange(turnColor, board)
+        const nextColor = reversi.colorChange(turnColor, board)
+        if (turnColor === nextColor) msg ="置ける場所がないので手番はスキップされます"
+        turnColor = nextColor
       }
+      
+
       console.log({ board: board, x: x, y: y, msg: msg, t: turnColor })
       io.emit('board', { board: board, x: x, y: y, msg: msg })
+
+      if(turnColor === 9){
+        io.emit('result', reversi.result(board))
+      }
     })
 
     socket.on('disconnect', () => {
