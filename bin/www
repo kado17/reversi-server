@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 var debug = require('debug')('reversi-server:server');
+const socketIO = require('../routes/socketIO');
 var socketio = require('../routes/socketIO')
 var app = socketio.app
 /**
@@ -23,6 +24,8 @@ server.on('listening', onListening);
 /**
  * Normalize a port into a number, string, or false.
  */
+
+socketIO.socketio
 
 function normalizePort(val) {
   var port = parseInt(val, 10);

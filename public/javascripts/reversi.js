@@ -56,7 +56,7 @@ exports.isPutableDisk = (x, y, oneself, board) => {
         tmpX = x + i * k
         tmpY = y + j * k
 
-        if (tmpY < 0 || HEIGHT < tmpY || tmpX < 0 || WIDTH < tmpX) {
+        if (tmpY < 0 || HEIGHT <= tmpY || tmpX < 0 || WIDTH <= tmpX) {
           continue
         }
 
@@ -109,7 +109,7 @@ exports.PutDisk = (x, y, oneself, board) => {
         tmpX = x + i * k
         tmpY = y + j * k
 
-        if (tmpY < 0 || HEIGHT < tmpY || tmpX < 0 || WIDTH < tmpX) {
+        if (tmpY < 0 || HEIGHT <= tmpY || tmpX < 0 || WIDTH <= tmpX) {
           continue
         }
 
@@ -130,10 +130,8 @@ exports.PutDisk = (x, y, oneself, board) => {
 }
 
 exports.colorChange = (nowColor, board) => {
-  console.log(10)
   const opponent = oppositeColor(nowColor)
   let x, y
-  console.log(opponent)
   for (y = 0; y < HEIGHT; y++) {
     for (x = 0; x < WIDTH; x++) {
       if (this.isPutableDisk(x, y, opponent, board)) {
