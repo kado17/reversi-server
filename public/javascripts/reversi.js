@@ -3,30 +3,17 @@ const WIDTH = SIZE
 const HEIGHT = SIZE
 const WHITE = 0,
   BLACK = 1,
+  PUTABLE = 8,
   EMPTY = 9
 
-exports.boardInit = () => {
-  let new_board = Array.from(new Array(HEIGHT), () => new Array(WIDTH).fill(9))
-  new_board[HEIGHT / 2][WIDTH / 2] = WHITE
-  new_board[HEIGHT / 2 - 1][WIDTH / 2 - 1] = WHITE
-  new_board[HEIGHT / 2 - 1][WIDTH / 2] = BLACK
-  new_board[HEIGHT / 2][WIDTH / 2 - 1] = BLACK
-  return new_board
-}
-
-const board = JSON.parse(JSON.stringify(this.boardInit()))
-const color = [WHITE, BLACK]
-// eslint-disable-line
-const turnColor = color[Math.floor(Math.random() * color.length)]
-
+const conv = ['白', '黒']
 const oppositeColor = (color) => (color === WHITE ? BLACK : color === BLACK ? WHITE : EMPTY)
-
 const isPutableDisk = (x, y, oneself, board) => {
   if (board[y][x] != EMPTY) {
     return false
   }
 
-  const opponent = oppositeColor(oneself) 
+  const opponent = oppositeColor(oneself)
   if (opponent === EMPTY) {
     return false
   }
@@ -68,6 +55,32 @@ const isPutableDisk = (x, y, oneself, board) => {
   return false
 }
 
+exports.setPutableCoord = (color, board) => {
+  let x, y
+  let new_board = JSON.parse(JSON.stringify(board))
+  for (y = 0; y < HEIGHT; y++) {
+    for (x = 0; x < WIDTH; x++) {
+      if (isPutableDisk(x, y, color, board)) {
+        new_board[y][x] = PUTABLE
+      }
+    }
+  }
+  return new_board
+}
+
+exports.boardInit = () => {
+  let newBoard = Array.from(new Array(HEIGHT), () => new Array(WIDTH).fill(9))
+  newBoard[HEIGHT / 2][WIDTH / 2] = WHITE
+  newBoard[HEIGHT / 2 - 1][WIDTH / 2 - 1] = WHITE
+  newBoard[HEIGHT / 2 - 1][WIDTH / 2] = BLACK
+  newBoard[HEIGHT / 2][WIDTH / 2 - 1] = BLACK
+  return newBoard
+}
+
+const board = JSON.parse(JSON.stringify(this.boardInit()))
+// eslint-disable-line
+const turnColor = BLACK
+
 exports.PutDisk = (x, y, oneself, board) => {
   let new_board = JSON.parse(JSON.stringify(board))
 
@@ -75,7 +88,7 @@ exports.PutDisk = (x, y, oneself, board) => {
     return []
   }
 
-  const opponent = oppositeColor(oneself) 
+  const opponent = oppositeColor(oneself)
   if (opponent === EMPTY) {
     return []
   }
@@ -163,3 +176,4 @@ exports.result = (board) => {
 
 exports.board = board
 exports.turnColor = turnColor
+exports.conv = conv
