@@ -1,25 +1,28 @@
 {
-  "name": "reversi-server",
-  "version": "0.0.0",
-  "license": "UNLICENSED",
-  "private": true,
+  "name": "reversi_server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "node ./bin/www",
-    "lint": "eslint --fix \"./**/*.js\"",
-    "format": "prettier --write \"./**/*.js\"",
-    "fix": "npm run format && npm run lint"
+    "lint": "eslint --fix \"./**/*.ts\" --ignore-path .gitignore",
+    "format": "prettier --write \"./**/*.ts\"",
+    "fix": "npm run format && npm run lint",
+    "dev": "ts-node src/app.ts"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "cookie-parser": "~1.4.4",
-    "debug": "~2.6.9",
-    "ejs": "^3.1.8",
-    "express": "~4.16.1",
-    "http-errors": "~1.6.3",
-    "morgan": "~1.9.1",
-    "socket.io": "^4.5.1"
+    "@types/socket.io": "^3.0.2",
+    "socket.io": "^4.5.1",
+    "ts-node": "^10.8.2",
+    "typescript": "^4.7.4"
   },
   "devDependencies": {
-    "eslint": "^8.18.0",
+    "@types/node": "^18.0.3",
+    "@typescript-eslint/eslint-plugin": "^5.30.5",
+    "@typescript-eslint/parser": "^5.30.5",
+    "eslint": "^8.19.0",
     "eslint-config-prettier": "^8.5.0",
     "prettier": "^2.7.1"
   }
