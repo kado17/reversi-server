@@ -13,7 +13,9 @@ let diskCount = reversi.diskCount
 
 const geneW8EntryMsg = (num) => `参加者募集中 現在${num}/2`
 const geneTurnPlayerMsg = (num) => `${reversi.conv[num]}の手番です`
-//const geneResult = ()
+const geneWinnerMsg = (num) => {
+  num !== 9 ? `${reversi.conv[num]}の勝ちです` : '引き分けです'
+}
 
 let msg = geneW8EntryMsg(Object.keys(entryPL).length)
 //サーバーをlistenしてsocketIOを設定
@@ -30,9 +32,9 @@ function socketIO() {
   io.on('connection', function (socket) {
     console.log(socket.id, '接続!')
     io.to(socket.id).emit('gameInfo', {
-      board: isPlaying ? reversi.setPutableCoord(turnColor,board) : board,
+      board: isPlaying ? reversi.setPutableCoord(turnColor, board) : board,
       msg: msg,
-      diskCount:diskCount,
+      diskCount: diskCount,
       isPlaying: isPlaying,
     })
     //socket処理
@@ -43,20 +45,26 @@ function socketIO() {
       const nextColor = reversi.colorChange(turnColor, newBoard)
       board = newBoard
       turnColor = nextColor
-      const {whiteCount, blackCount} = reversi.getDiskCount(board)
+      const { whiteCount, blackCount } = reversi.getDiskCount(board)
       diskCount.whiteCount = whiteCount
       diskCount.blackCount = blackCount
       const setPBoard = reversi.setPutableCoord(nextColor, newBoard)
       console.log({ board: board, x: x, y: y, t: nextColor })
       if (turnColor === 9) {
         const result = reversi.gameOver(board)
-        io.emit('gameOver', {result:result})
-        msg = result.winner
+        io.emit('gameOver', { result: result })
+        msg = geneWinnerMsg(result.winner)
+        isPlaying = false
       } else {
         msg = geneTurnPlayerMsg(nextColor)
       }
 
-      io.emit('gameInfo', { board: setPBoard, msg: msg,diskCount:diskCount,turnColor:entryPLKey[turnColor] })
+      io.emit('gameInfo', {
+        board: setPBoard,
+        msg: msg,
+        diskCount: diskCount,
+        turnColor: entryPLKey[turnColor],
+      })
     })
 
     socket.on('entry', () => {
@@ -92,6 +100,22 @@ function socketIO() {
         console.log('start', board)
         io.emit('gameInfo', { board: reversi.setPutableCoord(turnColor, board), msg: msg })
       }
+    })
+
+    socket.on('cancel', () => {
+      const result = reversi.gameOver(board)
+      io.emit('gameOver', { result: result, isCancel:true })
+      msg = geneWinnerMsg(result.winner)
+      io.emit('gameInfo', { msg: msg, diskCount: diskCount })
+      isPlaying = false
+    })
+    socket.on('reset', () => {
+      board = reversi.board
+      turnColor = reversi.turnColor
+      entryPL = {}
+      diskCount = reversi.diskCount
+      msg = geneW8EntryMsg(Object.keys(entryPL).length)
+      io.emit('gameInfo', { board: board, msg: msg, diskCount: diskCount, turnColor: turnColor })
     })
 
     socket.on('disconnect', () => {

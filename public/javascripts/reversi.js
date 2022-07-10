@@ -7,24 +7,23 @@ const WHITE = 0,
   EMPTY = 9
 
 const conv = ['白', '黒']
-const diskCount = {whiteCount: 0, blackCount: 0 }
+const diskCount = { whiteCount: 0, blackCount: 0 }
 const oppositeColor = (color) => (color === WHITE ? BLACK : color === BLACK ? WHITE : EMPTY)
 
-exports.getDiskCount = (board) =>{
-  let x,y;
+exports.getDiskCount = (board) => {
+  let x, y
   let whiteCount = 0
   let blackCount = 0
-for (y = 0; y < HEIGHT; y++) {
-  for (x = 0; x < WIDTH; x++) {
-    if (board[y][x] == WHITE) {
-      whiteCount += 1
-    } else if (board[y][x] == BLACK) {
-      blackCount += 1
+  for (y = 0; y < HEIGHT; y++) {
+    for (x = 0; x < WIDTH; x++) {
+      if (board[y][x] == WHITE) {
+        whiteCount += 1
+      } else if (board[y][x] == BLACK) {
+        blackCount += 1
+      }
     }
   }
-}
-return  {whiteCount: whiteCount, blackCount: blackCount }
-
+  return { whiteCount: whiteCount, blackCount: blackCount }
 }
 
 const isPutableDisk = (x, y, oneself, board) => {
@@ -141,19 +140,16 @@ exports.colorChange = (nowColor, board) => {
   return EMPTY
 }
 
-
-
 exports.gameOver = (board) => {
-  const{ whiteCount,
-    blackCount } = this.getDiskCount(board)
-  let winner = ''
+  const { whiteCount, blackCount } = this.getDiskCount(board)
+  let winner
 
   if (blackCount > whiteCount) {
-    winner = 'black'
+    winner = BLACK
   } else if (whiteCount > blackCount) {
-    winner = 'white'
+    winner = WHITE
   } else {
-    winner = 'draw'
+    winner = EMPTY
   }
 
   return { winner: winner, whiteCount: whiteCount, blackCount: blackCount }
