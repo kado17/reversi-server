@@ -7,7 +7,26 @@ const WHITE = 0,
   EMPTY = 9
 
 const conv = ['白', '黒']
+const diskCount = {whiteCount: 0, blackCount: 0 }
 const oppositeColor = (color) => (color === WHITE ? BLACK : color === BLACK ? WHITE : EMPTY)
+
+exports.getDiskCount = (board) =>{
+  let x,y;
+  let whiteCount = 0
+  let blackCount = 0
+for (y = 0; y < HEIGHT; y++) {
+  for (x = 0; x < WIDTH; x++) {
+    if (board[y][x] == WHITE) {
+      whiteCount += 1
+    } else if (board[y][x] == BLACK) {
+      blackCount += 1
+    }
+  }
+}
+return  {whiteCount: whiteCount, blackCount: blackCount }
+
+}
+
 const isPutableDisk = (x, y, oneself, board) => {
   if (board[y][x] != EMPTY) {
     return false
@@ -20,17 +39,11 @@ const isPutableDisk = (x, y, oneself, board) => {
 
   for (let dx = -1; dx < 2; dx++) {
     for (let dy = -1; dy < 2; dy++) {
-      if (dx === 0 && dy === 0) {
-        continue
-      }
+      if (dx === 0 && dy === 0) continue
 
-      if (y + dy < 0 || HEIGHT <= y + dy || x + dx < 0 || WIDTH <= x + dx) {
-        continue
-      }
+      if (y + dy < 0 || HEIGHT <= y + dy || x + dx < 0 || WIDTH <= x + dx) continue
 
-      if (board[y + dy][x + dx] != opponent) {
-        continue
-      }
+      if (board[y + dy][x + dx] != opponent) continue
 
       let tmpX, tmpY
 
@@ -38,17 +51,11 @@ const isPutableDisk = (x, y, oneself, board) => {
         tmpX = x + dx * k
         tmpY = y + dy * k
 
-        if (tmpY < 0 || HEIGHT <= tmpY || tmpX < 0 || WIDTH <= tmpX) {
-          continue
-        }
+        if (tmpY < 0 || HEIGHT <= tmpY || tmpX < 0 || WIDTH <= tmpX) continue
 
-        if (board[tmpY][tmpX] === EMPTY) {
-          break
-        }
+        if (board[tmpY][tmpX] === EMPTY) break
 
-        if (board[tmpY][tmpX] === oneself) {
-          return true
-        }
+        if (board[tmpY][tmpX] === oneself) return true
       }
     }
   }
@@ -77,35 +84,25 @@ exports.boardInit = () => {
   return newBoard
 }
 
-const board = JSON.parse(JSON.stringify(this.boardInit()))
+const board = this.boardInit()
 // eslint-disable-line
 const turnColor = BLACK
 
 exports.PutDisk = (x, y, oneself, board) => {
   let new_board = JSON.parse(JSON.stringify(board))
 
-  if (board[y][x] != EMPTY) {
-    return []
-  }
+  if (board[y][x] != EMPTY) return []
 
   const opponent = oppositeColor(oneself)
-  if (opponent === EMPTY) {
-    return []
-  }
+  if (opponent === EMPTY) return []
 
   for (let dx = -1; dx < 2; dx++) {
     for (let dy = -1; dy < 2; dy++) {
-      if (dx === 0 && dy === 0) {
-        continue
-      }
+      if (dx === 0 && dy === 0) continue
 
-      if (y + dy < 0 || HEIGHT <= y + dy || x + dx < 0 || WIDTH <= x + dx) {
-        continue
-      }
+      if (y + dy < 0 || HEIGHT <= y + dy || x + dx < 0 || WIDTH <= x + dx) continue
 
-      if (board[y + dy][x + dx] != opponent) {
-        continue
-      }
+      if (board[y + dy][x + dx] != opponent) continue
 
       let tmpX, tmpY
 
@@ -113,13 +110,9 @@ exports.PutDisk = (x, y, oneself, board) => {
         tmpX = x + dx * k
         tmpY = y + dy * k
 
-        if (tmpY < 0 || HEIGHT <= tmpY || tmpX < 0 || WIDTH <= tmpX) {
-          continue
-        }
+        if (tmpY < 0 || HEIGHT <= tmpY || tmpX < 0 || WIDTH <= tmpX) continue
 
-        if (board[tmpY][tmpX] === EMPTY) {
-          break
-        }
+        if (board[tmpY][tmpX] === EMPTY) break
 
         if (board[tmpY][tmpX] === oneself) {
           new_board[y][x] = oneself
@@ -148,32 +141,25 @@ exports.colorChange = (nowColor, board) => {
   return EMPTY
 }
 
-exports.result = (board) => {
-  let x, y
-  let white_count = 0,
-    black_count = 0
-  let winner = ''
-  for (y = 0; y < HEIGHT; y++) {
-    for (x = 0; x < WIDTH; x++) {
-      if (board[y][x] == WHITE) {
-        white_count += 1
-      } else if (board[y][x] == BLACK) {
-        black_count += 1
-      }
-    }
-  }
 
-  if (black_count > white_count) {
+
+exports.gameOver = (board) => {
+  const{ whiteCount,
+    blackCount } = this.getDiskCount(board)
+  let winner = ''
+
+  if (blackCount > whiteCount) {
     winner = 'black'
-  } else if (white_count > black_count) {
+  } else if (whiteCount > blackCount) {
     winner = 'white'
   } else {
     winner = 'draw'
   }
 
-  return { winner: winner, white_count: white_count, black_count: black_count }
+  return { winner: winner, whiteCount: whiteCount, blackCount: blackCount }
 }
 
 exports.board = board
 exports.turnColor = turnColor
 exports.conv = conv
+exports.diskCount = diskCount
