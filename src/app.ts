@@ -27,13 +27,13 @@ const gameStateInit: rev.GameState = {
 }
 
 const gameState = { ...gameStateInit }
-const entryPLInit: rev.EntryPL = { White: '', Black: '' }
-const entryPL = { ...entryPLInit }
-const geneEmitData = (keyList: rev.GSKey[]) => {
+const entryPL :{[key:string]:string}= { White: '', Black: '' }
+const geneEmitData = (keyList: string[]) => {
   const result: { [key: string]: rev.GameStateType } = {}
   Object.keys(gameState).forEach((key) => {
-    if (key in keyList) result[key] = gameState[key]
+    if (keyList.includes(key as string)) result[key] = gameState[key]
   })
+  console.log('geneE',result)
   return result
 }
 
@@ -42,7 +42,11 @@ const resetGameState = (): void => {
     gameState[key] = gameStateInit[key]
   })
 }
-
+const resetEntryPL = (): void => {
+  Object.keys(entryPL).forEach((key) => {
+    entryPL[key] = ''
+  })
+}
 const gameOverProcessing = (isGameCancel: boolean) => {
   const winner = rev.gameOver(gameState.numberOfDisc)
   io.emit('gameOver', { isGameCancel: isGameCancel })
@@ -62,22 +66,17 @@ io.on('connection', (socket: socketio.Socket) => {
     const { x, y } = data
     const { newBoard, newNumberOfDisc } = rev.putDisc(x, y, gameState.turnColor, gameState.board)
     const nextColor = rev.colorChange(gameState.turnColor, newBoard)
-    console.log({ board: newBoard, x: x, y: y, t: nextColor })
 
     if (gameState.turnColor === rev.PLColor.NA) {
-      //const result = rev.gameOver(board)
-      //server.emit('gameOver', { result: result })
-      //msg = geneWinnerMsg(result.winner)
-      //isPlaying = false
+      gameOverProcessing(false)
     } else {
       gameState.board = newBoard
       gameState.turnColor = nextColor
       gameState.numberOfDisc = newNumberOfDisc
       gameState.msg = geneTurnPlayerMsg(nextColor)
-
-      server.emit(
+      io.emit(
         'gameInfo',
-        geneEmitData([rev.GSKey.board, rev.GSKey.turnColor, rev.GSKey.NumberOfDisc, rev.GSKey.msg])
+        geneEmitData([rev.GSKey.board, rev.GSKey.turnColor, rev.GSKey.numberOfDisc, rev.GSKey.msg])
       )
     }
   })
@@ -85,7 +84,7 @@ io.on('connection', (socket: socketio.Socket) => {
   socket.on('entry', () => {
     let isSuccses = false
     console.log('entry:', socket.id)
-    if (Object.keys(entryPL).length < 2 && !Object.values(entryPL).includes(socket.id)) {
+    if (!Object.values(entryPL).includes(socket.id)) {
       //空の時ランダム
       if (
         Object.keys(entryPL).every((key) => {
@@ -95,18 +94,18 @@ io.on('connection', (socket: socketio.Socket) => {
         const randomKey: string =
           Object.keys(entryPL)[Math.floor(Math.random() * Object.keys(entryPL).length)]
         entryPL[randomKey] = socket.id
-      } else if (entryPL.black !== '') {
-        entryPL.white = socket.id
+      } else if (entryPL.White === '') {
+        entryPL.White = socket.id
       } else {
-        entryPL.black = socket.id
+        entryPL.Black = socket.id
       }
       isSuccses = true
     }
     io.to(socket.id).emit('btnActionRep', isSuccses)
     console.log('EntryPL:', entryPL)
-    if (!isSuccses) {
+    if (isSuccses) {
       const nowEntryNum = Object.keys(entryPL).filter((key) => {
-        entryPL[key] === ''
+       return  entryPL[key] !== ''
       }).length
       if (nowEntryNum < 2) {
         gameState.msg = geneW8EntryMsg(nowEntryNum)
@@ -127,15 +126,16 @@ io.on('connection', (socket: socketio.Socket) => {
 
   socket.on('reset', () => {
     resetGameState()
+    resetEntryPL()
     server.emit('gameInfo', gameState)
   })
   socket.on('disconnect', () => {
     console.log('s', socket.id)
     if (Object.values(entryPL).includes(socket.id)) {
-      const delKey = Object.keys(entryPL).reduce((r: string | null, k: string) => {
-        return entryPL[k] === socket.id ? k : r
-      }, null)
-      if (delKey !== null) {
+      const delKey = Object.keys(entryPL).find((key: string) => {
+        return entryPL[key] === socket.id 
+      })
+      if (delKey !== undefined) {
         delete entryPL[delKey]
         console.log(entryPL, delKey)
         if (gameState.isPlaying === false && gameState.isGameOver === false) {

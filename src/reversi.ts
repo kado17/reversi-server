@@ -36,12 +36,11 @@ export const GSKey = {
   board: 'board',
   msg: 'msg',
   turnColor: 'turnColor',
-  NumberOfDisc: 'NumberOfDisc',
+  numberOfDisc: 'numberOfDisc',
   isPlaying: 'isPlaying',
   isGameOver: 'isGameOver',
 } as const
 
-export type GSKey = typeof GSKey[keyof typeof GSKey]
 
 export type GameStateType = Disc[][] | string | PLColor | NumberOfDisc | boolean
 
@@ -67,9 +66,9 @@ export const getNumberOfDisc = (board: Disc[][]) => {
   for (y = 0; y < HEIGHT; y++) {
     for (x = 0; x < WIDTH; x++) {
       if (board[y][x] === Disc.White) {
-        result.white += 1
+        result.White += 1
       } else if (board[y][x] === Disc.Black) {
-        result.black += 1
+        result.Black += 1
       }
     }
   }
@@ -77,7 +76,8 @@ export const getNumberOfDisc = (board: Disc[][]) => {
 }
 
 export const isPutableDisc = (x: number, y: number, oneself: PLColor, board: Disc[][]) => {
-  if (board[y][x] != Disc.Empty) {
+  const fixedBoard= fixPutableToEmpty(board)
+  if (fixedBoard[y][x] != Disc.Empty) {
     return false
   }
 
@@ -89,7 +89,7 @@ export const isPutableDisc = (x: number, y: number, oneself: PLColor, board: Dis
 
       if (y + dy < 0 || HEIGHT <= y + dy || x + dx < 0 || WIDTH <= x + dx) continue
 
-      if (board[y + dy][x + dx] != opponent) continue
+      if (fixedBoard[y + dy][x + dx] != opponent) continue
 
       let tmpX, tmpY
 
@@ -99,9 +99,9 @@ export const isPutableDisc = (x: number, y: number, oneself: PLColor, board: Dis
 
         if (tmpY < 0 || HEIGHT <= tmpY || tmpX < 0 || WIDTH <= tmpX) continue
 
-        if (board[tmpY][tmpX] === Disc.Empty) break
+        if (fixedBoard[tmpY][tmpX] === Disc.Empty) break
 
-        if (board[tmpY][tmpX] === oneself) return true
+        if (fixedBoard[tmpY][tmpX] === oneself) return true
       }
     }
   }
@@ -109,7 +109,7 @@ export const isPutableDisc = (x: number, y: number, oneself: PLColor, board: Dis
 }
 
 const setPutableArea = (turnColor: PLColor, board: Disc[][]): Disc[][] => {
-  return board.map((row, y) =>
+   return board.map((row, y) =>
     row.map((_, x) => (isPutableDisc(x, y, turnColor, board) ? Disc.Putable : board[y][x]))
   )
 }
@@ -172,7 +172,7 @@ export const putDisc = (
   }
 
   return {
-    newBoard: setPutableArea(turnColor, newBoard),
+    newBoard: setPutableArea(opponent, newBoard),
     newNumberOfDisc: getNumberOfDisc(newBoard),
   }
 }
@@ -194,8 +194,8 @@ export const colorChange = (nowColor: PLColor, board: Disc[][]) => {
 
 export const gameOver = (numberOfDisc: NumberOfDisc) => {
   let winner: PLColor
-  if (numberOfDisc.black > numberOfDisc.white) winner = PLColor.Black
-  else if (numberOfDisc.white > numberOfDisc.black) winner = PLColor.White
+  if (numberOfDisc.Black > numberOfDisc.White) winner = PLColor.Black
+  else if (numberOfDisc.White > numberOfDisc.Black) winner = PLColor.White
   else winner = PLColor.NA
   return winner
 }
