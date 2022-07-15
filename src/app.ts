@@ -2,7 +2,7 @@ import http from 'http'
 import socketio from 'socket.io'
 import * as rev from './reversi'
 
-const PORT = 8000
+const port= process.env.PORT || 8000
 //サーバーの立ち上げ
 const server = http.createServer()
 const io = new socketio.Server(server, {
@@ -12,34 +12,25 @@ const io = new socketio.Server(server, {
   },
 })
 
-const geneW8EntryMsg = (num: number) => `参加者募集中 現在${num}/2`
+const geneW8EntryMsg = () => `参加者募集中 現在${getEntryPLNum()}/2`
 const geneTurnPlayerMsg = (PLColor: rev.PLColor) => `${rev.colorConvJp[PLColor]}の手番です`
 const geneWinnerMsg = (PLColor: rev.PLColor) =>
-  PLColor !== rev.PLColor.NA ? `${rev.colorConvJp[PLColor]}の勝ちです` : '引き分けです'
-
-const gameStateInit: rev.GameState = {
+  PLColor !== 'NA' ? `${rev.colorConvJp[PLColor]}の勝ちです` : '引き分けです'
+const entryPL: { [key: string]: string } = { White: '', Black: '' }
+const gameInfoInit: rev.GameInfo = {
   board: rev.createBoard(),
-  msg: geneW8EntryMsg(0),
-  turnColor: rev.PLColor.Black,
+  msg: geneW8EntryMsg(),
+  turnColor: 'Black',
   numberOfDisc: rev.getNumberOfDisc(rev.createBoard()),
-  isPlaying: false,
-  isGameOver: false,
+  gameState: 'playerWanted',
 }
 
-const gameState = { ...gameStateInit }
-const entryPL :{[key:string]:string}= { White: '', Black: '' }
-const geneEmitData = (keyList: string[]) => {
-  const result: { [key: string]: rev.GameStateType } = {}
-  Object.keys(gameState).forEach((key) => {
-    if (keyList.includes(key as string)) result[key] = gameState[key]
-  })
-  console.log('geneE',result)
-  return result
-}
+const gameInfo = { ...gameInfoInit }
+
 
 const resetGameState = (): void => {
-  Object.keys(gameState).forEach((key) => {
-    gameState[key] = gameStateInit[key]
+  Object.keys(gameInfo).forEach((key) => {
+    gameInfo[key] = gameInfoInit[key]
   })
 }
 const resetEntryPL = (): void => {
@@ -48,36 +39,68 @@ const resetEntryPL = (): void => {
   })
 }
 const gameOverProcessing = (isGameCancel: boolean) => {
-  const winner = rev.gameOver(gameState.numberOfDisc)
-  io.emit('gameOver', { isGameCancel: isGameCancel })
-  gameState.msg = geneWinnerMsg(winner)
-  gameState.isPlaying = false
-  gameState.isGameOver = false
-  io.emit('gameInfo', geneEmitData([rev.GSKey.msg, rev.GSKey.isPlaying, rev.GSKey.isGameOver]))
+  const winner = rev.getWinner(gameInfo.numberOfDisc)
+  gameInfo.msg = geneWinnerMsg(winner)
+  gameInfo.gameState = 'gameResult'
+  const alertMsg = isGameCancel ? 'ゲームが中止になりました' : 'ゲームが終了しました'
+  sendUserInfo(['board', 'turnColor', 'numberOfDisc', 'msg', 'gameState'])
+  sendShowAlert(alertMsg)
+  sendSetUserState('spectator')
 }
+const sendSetUserState =(userStateKey:rev.UserStateKey, socketId:string|null = null)=> {
+  if(socketId !== null)
+    io.to(socketId).emit('setUserState', { userStateKey: userStateKey })
+  else
+    io.emit('setUserState', { userStateKey: userStateKey })
+  
+}
+
+const sendUserInfo = (keyList: rev.GameInfoKey[],socketId:string|null = null) => {
+  const sKeyList: string[] = keyList
+  const emitData: { [key: string]: rev.GameInfoType } = {}
+  Object.keys(gameInfo).forEach((key) => {
+    if (sKeyList.includes(key)) emitData[key] = gameInfo[key]
+  })
+  console.log('geneE', emitData)
+  if(socketId !== null)
+    io.to(socketId).emit('gameInfo', emitData)
+  else
+  io.emit('gameInfo', emitData)
+}
+
+const sendShowAlert =(alertMsg:string, socketId:string|null = null)=> {
+  if(socketId !== null)
+    io.to(socketId).emit('showAlert', { alertMsg: alertMsg })
+  else
+    io.emit('showAlert', {alertMsg: alertMsg })
+  
+}
+const getEntryPLNum = ():number =>{return Object.keys(entryPL).filter((key) => {
+  return entryPL[key] !== ''
+}).length }
 
 //socket処理を記載する
 io.on('connection', (socket: socketio.Socket) => {
   console.log(socket.id, '接続!')
-  io.to(socket.id).emit('gameInfo', gameState)
+  sendUserInfo(['board','gameState','msg','numberOfDisc','turnColor'], socket.id)
   //socket処理
 
   socket.on('putDisc', (data) => {
     const { x, y } = data
-    const { newBoard, newNumberOfDisc } = rev.putDisc(x, y, gameState.turnColor, gameState.board)
-    const nextColor = rev.colorChange(gameState.turnColor, newBoard)
-
-    if (gameState.turnColor === rev.PLColor.NA) {
+    const { newBoard, newNumberOfDisc, nextColor } = rev.putDisc(
+      x,
+      y,
+      gameInfo.turnColor,
+      gameInfo.board
+    )
+    gameInfo.board = newBoard
+    gameInfo.numberOfDisc = newNumberOfDisc
+    gameInfo.turnColor = nextColor
+    if (nextColor === 'NA') {
       gameOverProcessing(false)
     } else {
-      gameState.board = newBoard
-      gameState.turnColor = nextColor
-      gameState.numberOfDisc = newNumberOfDisc
-      gameState.msg = geneTurnPlayerMsg(nextColor)
-      io.emit(
-        'gameInfo',
-        geneEmitData([rev.GSKey.board, rev.GSKey.turnColor, rev.GSKey.numberOfDisc, rev.GSKey.msg])
-      )
+      gameInfo.msg = geneTurnPlayerMsg(nextColor)
+      sendUserInfo(['board', 'turnColor', 'numberOfDisc', 'msg'])
     }
   })
 
@@ -101,23 +124,24 @@ io.on('connection', (socket: socketio.Socket) => {
       }
       isSuccses = true
     }
-    io.to(socket.id).emit('btnActionRep', isSuccses)
     console.log('EntryPL:', entryPL)
     if (isSuccses) {
-      const nowEntryNum = Object.keys(entryPL).filter((key) => {
-       return  entryPL[key] !== ''
-      }).length
+      const nowEntryNum = getEntryPLNum()
+      const alertMsg = isSuccses ? 'エントリーしました' : 'エントリーに失敗しました'
+      sendShowAlert(alertMsg, socket.id)
       if (nowEntryNum < 2) {
-        gameState.msg = geneW8EntryMsg(nowEntryNum)
-        io.emit('gameInfo', geneEmitData([rev.GSKey.msg]))
+        gameInfo.msg = geneW8EntryMsg()
+        sendUserInfo(['msg'])
+        sendSetUserState('waiting')
       } else {
-        io.to(entryPL.White).emit('startReversi', { color: rev.colorConvEn[rev.PLColor.White] })
-        io.to(entryPL.Black).emit('startReversi', { color: rev.colorConvEn[rev.PLColor.Black] })
-        gameState.isPlaying = true
-        gameState.msg = geneTurnPlayerMsg(gameState.turnColor)
-        io.emit('gameInfo', geneEmitData([rev.GSKey.isPlaying, rev.GSKey.msg]))
+        sendSetUserState('PLWhite', entryPL.White)
+        sendSetUserState('PLBlack', entryPL.Black)
+        gameInfo.gameState = 'duringAGame'
+        gameInfo.msg = geneTurnPlayerMsg(gameInfo.turnColor)
+        sendUserInfo(['gameState', 'msg'])
       }
     }
+   
   })
 
   socket.on('cancel', () => {
@@ -127,28 +151,28 @@ io.on('connection', (socket: socketio.Socket) => {
   socket.on('reset', () => {
     resetGameState()
     resetEntryPL()
-    server.emit('gameInfo', gameState)
+    sendUserInfo(['board','gameState','msg','numberOfDisc','turnColor'])
   })
   socket.on('disconnect', () => {
     console.log('s', socket.id)
     if (Object.values(entryPL).includes(socket.id)) {
       const delKey = Object.keys(entryPL).find((key: string) => {
-        return entryPL[key] === socket.id 
+        return entryPL[key] === socket.id
       })
       if (delKey !== undefined) {
-        delete entryPL[delKey]
-        console.log(entryPL, delKey)
-        if (gameState.isPlaying === false && gameState.isGameOver === false) {
-          gameState.msg = geneW8EntryMsg(Object.keys(entryPL).length)
-          console.log(gameState.msg)
-          io.emit('gameInfo', geneEmitData([rev.GSKey.msg]))
-        }
-      } else if (gameState.isPlaying === true && gameState.isGameOver === false) {
+        entryPL[delKey] = ''
+        console.log(entryPL, delKey,gameInfo.gameState)
+        if (gameInfo.gameState === 'playerWanted') {
+          gameInfo.msg = geneW8EntryMsg()
+          sendUserInfo(['msg'])
+        }else if (gameInfo.gameState === 'duringAGame') {
+        console.log('STOP')
         gameOverProcessing(true)
       }
+      } 
     }
     console.log('disconnect', socket.id)
   })
 })
 
-server.listen(PORT, () => console.log(`app listening on port ${PORT}`))
+server.listen(port, () => console.log(`app listening on port ${port}`))
