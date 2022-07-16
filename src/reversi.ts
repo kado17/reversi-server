@@ -22,7 +22,12 @@ const fixPutableToEmpty = (board: t.Disc[][]): t.Disc[][] => {
   )
 }
 
-export const isPutableDisc = (x: number, y: number, oneself: t.PLColor, board: t.Disc[][]): boolean => {
+export const isPutableDisc = (
+  x: number,
+  y: number,
+  oneself: t.PLColor,
+  board: t.Disc[][]
+): boolean => {
   const fixedBoard = fixPutableToEmpty(board)
   if (fixedBoard[y][x] != t.Disc.Empty) {
     return false
@@ -102,13 +107,15 @@ export const putDisc = (
   turnColor: t.PLColor,
   board: t.Disc[][]
 ): { newBoard: t.Disc[][]; newNumberOfDisc: t.NumberOfDisc; nextColor: t.PLColor } => {
-  const failureResData = { newBoard: board, newNumberOfDisc: getNumberOfDisc(board), nextColor: turnColor }
-  if (board[y][x] != t.Disc.Putable)
-    return failureResData
+  const failureResData = {
+    newBoard: board,
+    newNumberOfDisc: getNumberOfDisc(board),
+    nextColor: turnColor,
+  }
+  if (board[y][x] != t.Disc.Putable) return failureResData
 
   const opponent = oppositeColor(turnColor)
-  if (opponent === 'NA')
-    return failureResData
+  if (opponent === 'NA') return failureResData
   const newBoard = fixPutableToEmpty(board)
 
   for (let dx = -1; dx < 2; dx++) {

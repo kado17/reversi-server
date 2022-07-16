@@ -34,7 +34,6 @@ const gameInfo = { ...gameInfoInit }
 const entryPL: { [key: string]: string } = { White: '', Black: '' }
 let connectCount = 0
 
-
 const sendUserInfo = (keyList: t.GameInfoKey[], socketId: string | null = null) => {
   const sKeyList: string[] = keyList
   const emitData: { [key: string]: t.GameInfoType } = {}
@@ -159,7 +158,7 @@ io.on('connection', (socket: socketio.Socket) => {
       }
     }
   })
-  
+
   socket.on('entryCancel', () => {
     if (Object.values(entryPL).includes(socket.id)) {
       const delKey = Object.keys(entryPL).find((key: string) => {
