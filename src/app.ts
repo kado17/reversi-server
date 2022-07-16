@@ -6,7 +6,12 @@ import * as rev from './reversi'
 const port = process.env.PORT || 8000
 //サーバーの立ち上げ
 const server = http.createServer()
-const io = new socketio.Server(server)
+const io = new socketio.Server(server ,{
+  cors: {
+    origin: ['http://localhost:3000'],
+    methods: ['GET', 'POST'],
+  },
+})
 
 const entryPL: { [key: string]: string } = { White: '', Black: '' }
 const getEntryPLNum = (): number => {
