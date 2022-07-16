@@ -2,7 +2,7 @@
   "name": "reversi_server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/app.ts",
   "scripts": {
     "lint": "eslint --fix \"./**/*.ts\" --ignore-path .gitignore",
     "format": "prettier --write \"./**/*.ts\"",
