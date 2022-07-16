@@ -8,6 +8,7 @@ const port = process.env.PORT || 8000
 const server = http.createServer()
 const io = new socketio.Server(server)
 
+const entryPL: { [key: string]: string } = { White: '', Black: '' }
 const getEntryPLNum = (): number => {
   return Object.keys(entryPL).filter((key) => {
     return entryPL[key] !== ''
@@ -26,7 +27,7 @@ const gameInfoInit: t.GameInfo = {
   gameState: 'playerWanted',
 }
 const gameInfo = { ...gameInfoInit }
-const entryPL: { [key: string]: string } = { White: '', Black: '' }
+
 let connectCount = 0
 
 const sendUserInfo = (keyList: t.GameInfoKey[], socketId: string | null = null) => {
