@@ -8,8 +8,9 @@ const port = process.env.PORT || 8000
 const server = http.createServer()
 const io = new socketio.Server(server ,{
   cors: {
-    origin: ['http://localhost:3000'],
+    origin: 'https://reversiserver.herokuapp.com',
     methods: ['GET', 'POST'],
+    credentials:false
   },
 })
 
