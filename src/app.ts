@@ -6,12 +6,7 @@ import * as rev from './reversi'
 const port = process.env.PORT || 8000
 //サーバーの立ち上げ
 const server = http.createServer()
-const io = new socketio.Server(server, {
-  cors: {
-    origin: ['http://localhost:3000'],
-    methods: ['GET', 'POST'],
-  },
-})
+const io = new socketio.Server(server)
 
 const getEntryPLNum = (): number => {
   return Object.keys(entryPL).filter((key) => {
@@ -40,7 +35,6 @@ const sendUserInfo = (keyList: t.GameInfoKey[], socketId: string | null = null) 
   Object.keys(gameInfo).forEach((key) => {
     if (sKeyList.includes(key)) emitData[key] = gameInfo[key]
   })
-  console.log('geneE', emitData)
   if (socketId !== null) io.to(socketId).emit('gameInfo', emitData)
   else io.emit('gameInfo', emitData)
 }
@@ -97,7 +91,6 @@ const connectCountMinus = () => {
 
 //socket処理を記載する
 io.on('connection', (socket: socketio.Socket) => {
-  console.log(socket.id, '接続!')
   connectCountPlus()
   sendUserInfo(['board', 'gameState', 'msg', 'numberOfDisc', 'turnColor'], socket.id)
 
@@ -122,7 +115,6 @@ io.on('connection', (socket: socketio.Socket) => {
 
   socket.on('entry', () => {
     let isSuccses = false
-    console.log('entry:', socket.id)
     if (!Object.values(entryPL).includes(socket.id)) {
       //空の時ランダム
       if (
@@ -167,7 +159,6 @@ io.on('connection', (socket: socketio.Socket) => {
       if (delKey !== undefined) {
         if (gameInfo.gameState === 'playerWanted') {
           entryPL[delKey] = ''
-          console.log(entryPL, delKey, gameInfo.gameState)
           gameInfo.msg = geneW8EntryMsg()
           sendUserInfo(['msg'])
           sendUserState('spectator', socket.id)
@@ -185,24 +176,20 @@ io.on('connection', (socket: socketio.Socket) => {
   })
 
   socket.on('disconnect', () => {
-    console.log('s', socket.id)
     if (Object.values(entryPL).includes(socket.id)) {
       const delKey = Object.keys(entryPL).find((key: string) => {
         return entryPL[key] === socket.id
       })
       if (delKey !== undefined) {
         entryPL[delKey] = ''
-        console.log(entryPL, delKey, gameInfo.gameState)
         if (gameInfo.gameState === 'playerWanted') {
           gameInfo.msg = geneW8EntryMsg()
           sendUserInfo(['msg'])
         } else if (gameInfo.gameState === 'duringAGame') {
-          console.log('STOP')
           gameOverProcessing(true)
         }
       }
     }
-    console.log('disconnect', socket.id)
     connectCountMinus()
     if (connectCount < 1) {
       gameResetProcessing()
