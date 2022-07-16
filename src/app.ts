@@ -1,5 +1,6 @@
 import http from 'http'
 import socketio from 'socket.io'
+import * as t from './typedef'
 import * as rev from './reversi'
 
 const port = process.env.PORT || 8000
@@ -11,25 +12,61 @@ const io = new socketio.Server(server, {
     methods: ['GET', 'POST'],
   },
 })
+
 const getEntryPLNum = (): number => {
   return Object.keys(entryPL).filter((key) => {
     return entryPL[key] !== ''
   }).length
 }
 const geneW8EntryMsg = () => `参加者募集中 現在${getEntryPLNum()}/2`
-const geneTurnPlayerMsg = (PLColor: rev.PLColor) => `${rev.colorConvJp[PLColor]}の手番です`
-const geneWinnerMsg = (PLColor: rev.PLColor) =>
+const geneTurnPlayerMsg = (PLColor: t.PLColor) => `${rev.colorConvJp[PLColor]}の手番です`
+const geneWinnerMsg = (PLColor: t.PLColor) =>
   PLColor !== 'NA' ? `${rev.colorConvJp[PLColor]}の勝ちです` : '引き分けです'
-const entryPL: { [key: string]: string } = { White: '', Black: '' }
-const gameInfoInit: rev.GameInfo = {
+
+const gameInfoInit: t.GameInfo = {
   board: rev.createBoard(),
   msg: geneW8EntryMsg(),
   turnColor: 'Black',
   numberOfDisc: rev.getNumberOfDisc(rev.createBoard()),
   gameState: 'playerWanted',
 }
-
 const gameInfo = { ...gameInfoInit }
+const entryPL: { [key: string]: string } = { White: '', Black: '' }
+let connectCount = 0
+
+
+const sendUserInfo = (keyList: t.GameInfoKey[], socketId: string | null = null) => {
+  const sKeyList: string[] = keyList
+  const emitData: { [key: string]: t.GameInfoType } = {}
+  Object.keys(gameInfo).forEach((key) => {
+    if (sKeyList.includes(key)) emitData[key] = gameInfo[key]
+  })
+  console.log('geneE', emitData)
+  if (socketId !== null) io.to(socketId).emit('gameInfo', emitData)
+  else io.emit('gameInfo', emitData)
+}
+const sendUserState = (userState: t.UserState, socketId: string | null = null) => {
+  if (socketId !== null) io.to(socketId).emit('userState', { newUserState: userState })
+  else io.emit('userState', { newUserState: userState })
+}
+
+const sendShowAlert = (alertMsg: string, socketId: string | null = null) => {
+  if (socketId !== null) io.to(socketId).emit('showAlert', { alertMsg: alertMsg })
+  else io.emit('showAlert', { alertMsg: alertMsg })
+}
+
+const sendconnectCount = (count: number) => {
+  io.emit('connectCount', { newConnectCount: count })
+}
+
+const gameOverProcessing = (isGameCancel: boolean) => {
+  const winner = rev.getWinner(gameInfo.numberOfDisc)
+  gameInfo.msg = geneWinnerMsg(winner)
+  gameInfo.gameState = 'gameResult'
+  const alertMsg = isGameCancel ? 'ゲームが中止になりました' : 'ゲームが終了しました'
+  sendUserInfo(['board', 'turnColor', 'numberOfDisc', 'msg', 'gameState'])
+  sendShowAlert(alertMsg)
+}
 
 const resetGameState = (): void => {
   Object.keys(gameInfo).forEach((key) => {
@@ -41,48 +78,29 @@ const resetEntryPL = (): void => {
     entryPL[key] = ''
   })
 }
-const gameOverProcessing = (isGameCancel: boolean) => {
-  const winner = rev.getWinner(gameInfo.numberOfDisc)
-  gameInfo.msg = geneWinnerMsg(winner)
-  gameInfo.gameState = 'gameResult'
-  const alertMsg = isGameCancel ? 'ゲームが中止になりました' : 'ゲームが終了しました'
-  sendUserInfo(['board', 'turnColor', 'numberOfDisc', 'msg', 'gameState'])
-  sendShowAlert(alertMsg)
-}
-const sendUserState = (userState: rev.UserState, socketId: string | null = null) => {
-  if (socketId !== null) io.to(socketId).emit('userState', { newUserState: userState })
-  else io.emit('userState', { newUserState: userState })
-}
 
-const sendUserInfo = (keyList: rev.GameInfoKey[], socketId: string | null = null) => {
-  const sKeyList: string[] = keyList
-  const emitData: { [key: string]: rev.GameInfoType } = {}
-  Object.keys(gameInfo).forEach((key) => {
-    if (sKeyList.includes(key)) emitData[key] = gameInfo[key]
-  })
-  console.log('geneE', emitData)
-  if (socketId !== null) io.to(socketId).emit('gameInfo', emitData)
-  else io.emit('gameInfo', emitData)
-}
-
-const sendShowAlert = (alertMsg: string, socketId: string | null = null) => {
-  if (socketId !== null) io.to(socketId).emit('showAlert', { alertMsg: alertMsg })
-  else io.emit('showAlert', { alertMsg: alertMsg })
-}
-
-const resetGame = () => {
+const gameResetProcessing = () => {
   resetGameState()
   resetEntryPL()
   sendUserState('spectator')
   sendUserInfo(['board', 'gameState', 'msg', 'numberOfDisc', 'turnColor'])
   sendShowAlert('ゲームがリセットされました')
-  
 }
+
+const connectCountPlus = () => {
+  connectCount += 1
+  sendconnectCount(connectCount)
+}
+const connectCountMinus = () => {
+  connectCount -= 1
+  sendconnectCount(connectCount)
+}
+
 //socket処理を記載する
 io.on('connection', (socket: socketio.Socket) => {
   console.log(socket.id, '接続!')
+  connectCountPlus()
   sendUserInfo(['board', 'gameState', 'msg', 'numberOfDisc', 'turnColor'], socket.id)
-  //socket処理
 
   socket.on('putDisc', (data) => {
     const { x, y } = data
@@ -123,7 +141,6 @@ io.on('connection', (socket: socketio.Socket) => {
       }
       isSuccses = true
     }
-    console.log('EntryPL:', entryPL)
     if (isSuccses) {
       const nowEntryNum = getEntryPLNum()
       const alertMsg = isSuccses ? 'エントリーしました' : 'エントリーに失敗しました'
@@ -132,7 +149,7 @@ io.on('connection', (socket: socketio.Socket) => {
         gameInfo.msg = geneW8EntryMsg()
         sendUserInfo(['msg'])
         sendUserState('waiting', socket.id)
-      } else if(nowEntryNum === 2) {
+      } else if (nowEntryNum === 2) {
         sendUserState('PLWhite', entryPL.White)
         sendUserState('PLBlack', entryPL.Black)
         gameInfo.gameState = 'duringAGame'
@@ -142,28 +159,32 @@ io.on('connection', (socket: socketio.Socket) => {
       }
     }
   })
+  
   socket.on('entryCancel', () => {
-     if (Object.values(entryPL).includes(socket.id)) {
+    if (Object.values(entryPL).includes(socket.id)) {
       const delKey = Object.keys(entryPL).find((key: string) => {
         return entryPL[key] === socket.id
       })
       if (delKey !== undefined) {
         if (gameInfo.gameState === 'playerWanted') {
-                  entryPL[delKey] = ''
-        console.log(entryPL, delKey, gameInfo.gameState)
+          entryPL[delKey] = ''
+          console.log(entryPL, delKey, gameInfo.gameState)
           gameInfo.msg = geneW8EntryMsg()
           sendUserInfo(['msg'])
-          sendUserState('spectator',socket.id)
+          sendUserState('spectator', socket.id)
         }
       }
-    }})
+    }
+  })
+
   socket.on('cancel', () => {
     gameOverProcessing(true)
   })
 
   socket.on('reset', () => {
-    resetGame()
+    gameResetProcessing()
   })
+
   socket.on('disconnect', () => {
     console.log('s', socket.id)
     if (Object.values(entryPL).includes(socket.id)) {
@@ -183,6 +204,10 @@ io.on('connection', (socket: socketio.Socket) => {
       }
     }
     console.log('disconnect', socket.id)
+    connectCountMinus()
+    if (connectCount < 1) {
+      gameResetProcessing()
+    }
   })
 })
 
