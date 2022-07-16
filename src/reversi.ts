@@ -11,7 +11,7 @@ export const Disc = {
 export type GameState = 'playerWanted' | 'duringAGame' | 'gameResult'
 export type Disc = typeof Disc[keyof typeof Disc]
 export type PLColor = 'White' | 'Black' | 'NA'
-export type UserStateKey = 'spectator' | 'waiting' | 'PLWhite' | 'PLBlack'
+export type UserState = 'spectator' | 'waiting' | 'PLWhite' | 'PLBlack'
 export const colorConvJp: { [key in PLColor]: string } = {
   White: '白',
   Black: '黒',
