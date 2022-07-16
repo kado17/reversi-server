@@ -1,1 +1,1 @@
-web: yarn dev
+web: ts-node src/app.ts
