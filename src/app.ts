@@ -8,7 +8,7 @@ const port = process.env.PORT || 8000
 const server = http.createServer()
 const io = new socketio.Server(server ,{
   cors: {
-    origin: 'http://localhost:3000',
+    origin: 'https://kado17.github.io/reversi/',
     methods: ['GET', 'POST'],
     credentials:true
   },
@@ -66,6 +66,7 @@ const gameOverProcessing = (isGameCancel: boolean) => {
   const alertMsg = isGameCancel ? 'ゲームが中止になりました' : 'ゲームが終了しました'
   sendUserInfo(['board', 'turnColor', 'numberOfDisc', 'msg', 'gameState'])
   sendShowAlert(alertMsg)
+  console.log('gameOver')
 }
 
 const resetGameState = (): void => {
@@ -85,6 +86,7 @@ const gameResetProcessing = () => {
   sendUserState('spectator')
   sendUserInfo(['board', 'gameState', 'msg', 'numberOfDisc', 'turnColor'])
   sendShowAlert('ゲームがリセットされました')
+  console.log('gameReset')
 }
 
 const connectCountPlus = () => {
@@ -98,6 +100,7 @@ const connectCountMinus = () => {
 
 //socket処理を記載する
 io.on('connection', (socket: socketio.Socket) => {
+  console.log('connect:', socket.id)
   connectCountPlus()
   sendUserInfo(['board', 'gameState', 'msg', 'numberOfDisc', 'turnColor'], socket.id)
 
@@ -154,6 +157,8 @@ io.on('connection', (socket: socketio.Socket) => {
         gameInfo.msg = geneTurnPlayerMsg(gameInfo.turnColor)
         sendUserInfo(['gameState', 'msg'])
         sendShowAlert('ゲーム開始!')
+        console.log('gameStart')
+
       }
     }
   })
@@ -197,6 +202,7 @@ io.on('connection', (socket: socketio.Socket) => {
         }
       }
     }
+    console.log('disconnect:', socket.id)
     connectCountMinus()
     if (connectCount < 1) {
       gameResetProcessing()
