@@ -8,7 +8,7 @@ const port = process.env.PORT || 8000
 const server = http.createServer()
 const io = new socketio.Server(server ,{
   cors: {
-    origin: 'https://kado17.github.io/reversi/',
+    origin: 'https://kado17.github.io/reversi',
     methods: ['GET', 'POST'],
     credentials:true
   },
