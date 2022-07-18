@@ -24,6 +24,8 @@ const geneW8EntryMsg = () => `参加者募集中 現在${getEntryPLNum()}/2`
 const geneTurnPlayerMsg = (PLColor: t.PLColor) => `${rev.colorConvJp[PLColor]}の手番です`
 const geneWinnerMsg = (PLColor: t.PLColor) =>
   PLColor !== 'NA' ? `${rev.colorConvJp[PLColor]}の勝ちです` : '引き分けです'
+const geneSkipTurnAlert = (PLColor: t.PLColor) =>
+  `置ける場所がないので、\n${rev.colorConvJp[PLColor]}の手番がスキップされました`
 
 const gameInfoInit: t.GameInfo = {
   board: rev.createBoard(),
@@ -112,6 +114,9 @@ io.on('connection', (socket: socketio.Socket) => {
       gameInfo.turnColor,
       gameInfo.board
     )
+    if(gameInfo.turnColor === nextColor){
+      sendShowAlert(geneSkipTurnAlert(nextColor))
+    }
     gameInfo.board = newBoard
     gameInfo.numberOfDisc = newNumberOfDisc
     gameInfo.turnColor = nextColor
