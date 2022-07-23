@@ -20,6 +20,7 @@ const getEntryPLNum = (): number => {
     return entryPL[key] !== ''
   }).length
 }
+//クライアントに送信するメッセージ分の生成
 const geneW8EntryMsg = () => `参加者募集中 現在${getEntryPLNum()}/2`
 const geneTurnPlayerMsg = (PLColor: t.PLColor) => `${rev.colorConvJp[PLColor]}の手番です`
 const geneWinnerMsg = (PLColor: t.PLColor) =>
@@ -37,7 +38,10 @@ const gameInfoInit: t.GameInfo = {
 const gameInfo = { ...gameInfoInit }
 
 let connectCount = 0
-
+/*クライアントに向けてそれぞれのデータを送信する関数
+引数にsocketIdがあればそのidのクライアントのみに送信
+なければクライアント全員に送信
+*/
 const sendUserInfo = (keyList: t.GameInfoKey[], socketId: string | null = null) => {
   const sKeyList: string[] = keyList
   const emitData: { [key: string]: t.GameInfoType } = {}
@@ -61,6 +65,7 @@ const sendconnectCount = (count: number) => {
   io.emit('connectCount', { newConnectCount: count })
 }
 
+//ゲームが終了した時の処理
 const gameOverProcessing = (isGameCancel: boolean) => {
   const winner = rev.getWinner(gameInfo.numberOfDisc)
   gameInfo.msg = geneWinnerMsg(winner)
@@ -71,19 +76,22 @@ const gameOverProcessing = (isGameCancel: boolean) => {
   console.log('gameOver')
 }
 
-const resetGameState = (): void => {
+//GameInfoをすべて初期状態にする
+const resetGameInfo = (): void => {
   Object.keys(gameInfo).forEach((key) => {
     gameInfo[key] = gameInfoInit[key]
   })
 }
+//entryPLのvalueを初期化する
 const resetEntryPL = (): void => {
   Object.keys(entryPL).forEach((key) => {
     entryPL[key] = ''
   })
 }
 
+//ゲームリセット時に様々な変数を初期化したうえでクライアントに送信する
 const gameResetProcessing = () => {
-  resetGameState()
+  resetGameInfo()
   resetEntryPL()
   sendUserState('spectator')
   sendUserInfo(['board', 'gameState', 'msg', 'numberOfDisc', 'turnColor'])
@@ -91,6 +99,8 @@ const gameResetProcessing = () => {
   console.log('gameReset')
 }
 
+/*接続中のクライアントの人数を増減させて、
+クライアントに現在の人数を送信*/
 const connectCountPlus = () => {
   connectCount += 1
   sendconnectCount(connectCount)
@@ -100,12 +110,14 @@ const connectCountMinus = () => {
   sendconnectCount(connectCount)
 }
 
-//socket処理を記載する
+//socket処理
 io.on('connection', (socket: socketio.Socket) => {
+  //接続したクライアントに現在のゲーム情報を送信
   console.log('connect:', socket.id)
   connectCountPlus()
   sendUserInfo(['board', 'gameState', 'msg', 'numberOfDisc', 'turnColor'], socket.id)
 
+  //オセロ石が置かれたときの処理
   socket.on('putDisc', (data) => {
     const { x, y } = data
     const { newBoard, newNumberOfDisc, nextColor } = rev.putDisc(
@@ -128,10 +140,11 @@ io.on('connection', (socket: socketio.Socket) => {
     }
   })
 
+  //クライアントをエントリーさせる処理
   socket.on('entry', () => {
     let isSuccses = false
     if (!Object.values(entryPL).includes(socket.id)) {
-      //空の時ランダム
+      //空の時色をランダム
       if (
         Object.keys(entryPL).every((key) => {
           entryPL[key] === ''
@@ -151,11 +164,12 @@ io.on('connection', (socket: socketio.Socket) => {
       const nowEntryNum = getEntryPLNum()
       const alertMsg = isSuccses ? 'エントリーしました' : 'エントリーに失敗しました'
       sendShowAlert(alertMsg, socket.id)
+      //二人そろっていなければmsgの更新だけ行う
       if (nowEntryNum < 2) {
         gameInfo.msg = geneW8EntryMsg()
         sendUserInfo(['msg'])
         sendUserState('waiting', socket.id)
-      } else if (nowEntryNum === 2) {
+      } else if (nowEntryNum === 2) { //二人そろったらゲーム開始
         sendUserState('PLWhite', entryPL.White)
         sendUserState('PLBlack', entryPL.Black)
         gameInfo.gameState = 'duringAGame'
@@ -168,6 +182,7 @@ io.on('connection', (socket: socketio.Socket) => {
     }
   })
 
+  //エントリーしたユーザーを外す処理
   socket.on('entryCancel', () => {
     if (Object.values(entryPL).includes(socket.id)) {
       const delKey = Object.keys(entryPL).find((key: string) => {
@@ -184,14 +199,16 @@ io.on('connection', (socket: socketio.Socket) => {
     }
   })
 
+  //ゲーム終了
   socket.on('cancel', () => {
     gameOverProcessing(true)
   })
-
+  //ゲームリセット
   socket.on('reset', () => {
     gameResetProcessing()
   })
 
+  //ユーザーの通信が切断されたとき
   socket.on('disconnect', () => {
     if (Object.values(entryPL).includes(socket.id)) {
       const delKey = Object.keys(entryPL).find((key: string) => {
@@ -199,6 +216,7 @@ io.on('connection', (socket: socketio.Socket) => {
       })
       if (delKey !== undefined) {
         entryPL[delKey] = ''
+        //外したユーザーがエントリーした場合、ゲーム中ならばゲームを終了させる
         if (gameInfo.gameState === 'playerWanted') {
           gameInfo.msg = geneW8EntryMsg()
           sendUserInfo(['msg'])
@@ -209,10 +227,12 @@ io.on('connection', (socket: socketio.Socket) => {
     }
     console.log('disconnect:', socket.id)
     connectCountMinus()
+    //接続しているクライアントが0になったときにゲームをリセットする
     if (connectCount < 1) {
       gameResetProcessing()
     }
   })
 })
 
+//サーバー起動
 server.listen(port, () => console.log(`app listening on port ${port}`))
