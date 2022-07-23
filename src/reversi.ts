@@ -32,6 +32,7 @@ export const isPutableDisc = (
   oneself: t.PLColor,
   board: t.Disc[][]
 ): boolean => {
+  //この後の処理のためにboardの8(Putable)を9(empty)に置き換え
   const fixedBoard = fixPutableToEmpty(board)
   if (fixedBoard[y][x] != t.Disc.Empty) {
     return false
@@ -130,6 +131,7 @@ export const putDisc = (
 
   const opponent = oppositeColor(turnColor)
   if (opponent === 'NA') return failureResData
+  //この後の処理のためにboardの8(Putable)を9(empty)に置き換え
   const newBoard = fixPutableToEmpty(board)
   //引数で指定した座標の周り8マスを順番に処理
   for (let dx = -1; dx < 2; dx++) {
